@@ -42,8 +42,11 @@ export function MetricsCharts({ metrics }: MetricsChartsProps) {
     // We need to synchronize the history arrays. 
     // In a real app we'd fetch structured time-series. 
     // For this mock, we'll take the history of the first service and map others to it by index.
-    const chartData = metrics["api-gateway"]?.history.map((point, index) => {
-        const combinedPoint: any = { timestamp: point.timestamp };
+    const referenceService = serviceIds[0];
+    const referenceHistory = referenceService ? metrics[referenceService]?.history : [];
+    
+    const chartData = referenceHistory?.map((point, index) => {
+        const combinedPoint: Record<string, string | number> = { timestamp: point.timestamp };
         serviceIds.forEach(id => {
             const historyPoint = metrics[id]?.history[index];
             if (historyPoint) {
