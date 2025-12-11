@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/common/Button";
-import { ShieldCheck } from "lucide-react";
+import { SentinelLogo } from "@/components/common/SentinelLogo";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -26,9 +26,7 @@ export function Header() {
         >
             <div className="container px-4 md:px-6 flex items-center justify-between">
                 <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-                    <div className="bg-primary/20 p-1.5 rounded-lg">
-                        <ShieldCheck className="h-6 w-6 text-primary" />
-                    </div>
+                    <SentinelLogo size={32} />
                     <span>Sentinel</span>
                 </Link>
 
@@ -39,7 +37,7 @@ export function Header() {
                     <Link href="#how-it-works" className="hover:text-primary transition-colors">
                         How It Works
                     </Link>
-                    <Link href="/dashboard" className="hover:text-primary transition-colors">
+                    <Link href="/demo" className="hover:text-primary transition-colors">
                         Live Demo
                     </Link>
                 </nav>

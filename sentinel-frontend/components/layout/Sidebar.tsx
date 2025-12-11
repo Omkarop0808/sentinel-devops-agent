@@ -9,16 +9,18 @@ import {
     Activity,
     FileText,
     Settings,
-    ShieldCheck,
     LogOut,
     ChevronLeft,
     ChevronRight,
+    BarChart3,
 } from "lucide-react";
+import { SentinelLogo } from "@/components/common/SentinelLogo";
 import { useState } from "react";
 import { motion } from "framer-motion";
 
 const navItems = [
     { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
+    { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
     { name: "Services", href: "/dashboard/services", icon: Server },
     { name: "Incidents", href: "/dashboard/incidents", icon: Activity },
     { name: "Logs", href: "/dashboard/logs", icon: FileText },
@@ -38,9 +40,7 @@ export function Sidebar() {
             {/* Logo Area */}
             <div className={cn("flex items-center h-16 px-6 border-b border-white/5", collapsed ? "justify-center" : "justify-between")}>
                 <Link href="/" className="flex items-center gap-3 overflow-hidden">
-                    <div className="bg-primary/20 p-1.5 rounded-lg shrink-0">
-                        <ShieldCheck className="h-6 w-6 text-primary" />
-                    </div>
+                    <SentinelLogo size={28} className="shrink-0" />
                     {!collapsed && (
                         <motion.span
                             initial={{ opacity: 0 }}

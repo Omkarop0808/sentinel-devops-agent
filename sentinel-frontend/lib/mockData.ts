@@ -12,14 +12,25 @@ export interface Service {
     trend: number[]; // 1-hour trend for sparkline
 }
 
+export interface IncidentEvent {
+    time: string;
+    event: string;
+    icon: string; // Emoji or Lucide icon name
+}
+
 export interface Incident {
     id: string;
     title: string;
     serviceId: string;
     status: "resolved" | "in-progress" | "failed";
     severity: "critical" | "warning" | "info";
-    timestamp: string;
+    timestamp: string; // ISO string
     duration: string;
+    rootCause: string;
+    agentAction: string;
+    agentPredictionConfidence: number;
+    timeline: IncidentEvent[];
+    logs?: string[]; // Optional logs/reasoning dump
 }
 
 export const mockServices: Service[] = [
@@ -98,8 +109,16 @@ export const mockIncidents: Incident[] = [
         serviceId: "payments-worker",
         status: "in-progress",
         severity: "warning",
-        timestamp: "2 mins ago",
+        timestamp: new Date(Date.now() - 1000 * 60 * 2).toISOString(), // 2 mins ago
         duration: "Ongoing",
+        rootCause: "Worker thread pool exhaustion detected",
+        agentAction: "Scaling worker replicas from 2 -> 4",
+        agentPredictionConfidence: 89,
+        timeline: [
+            { time: new Date(Date.now() - 1000 * 60 * 2).toLocaleTimeString(), event: "Latency spike detected (250ms+)", icon: "⚠️" },
+            { time: new Date(Date.now() - 1000 * 60 * 1.8).toLocaleTimeString(), event: "Agent prediction: 90% chance of cascade failure", icon: "🤖" },
+            { time: new Date(Date.now() - 1000 * 60 * 1.5).toLocaleTimeString(), event: "Auto-scaling initiated", icon: "🔧" },
+        ]
     },
     {
         id: "inc-2",
@@ -107,8 +126,16 @@ export const mockIncidents: Incident[] = [
         serviceId: "search-service",
         status: "failed",
         severity: "critical",
-        timestamp: "15 mins ago",
+        timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(), // 45 mins ago
         duration: "15m",
+        rootCause: "Elasticsearch heap memory OOM",
+        agentAction: "Restarted service (Attempt 2 failed)",
+        agentPredictionConfidence: 95,
+        timeline: [
+            { time: "14:20:10", event: "Service unresponsive", icon: "🔴" },
+            { time: "14:20:15", event: "Agent attempted soft restart", icon: "🔧" },
+            { time: "14:22:00", event: "Restart failed. Escalating to human.", icon: "❌" },
+        ]
     },
     {
         id: "inc-3",
@@ -116,8 +143,17 @@ export const mockIncidents: Incident[] = [
         serviceId: "auth-service",
         status: "resolved",
         severity: "info",
-        timestamp: "2 hours ago",
+        timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(), // 2 hours ago
         duration: "5m 20s",
+        rootCause: "Clock drift on auth-node-3",
+        agentAction: "Resynced NTP on node-3",
+        agentPredictionConfidence: 99,
+        timeline: [
+            { time: "12:15:30", event: "Token validation errors spike", icon: "⚠️" },
+            { time: "12:15:45", event: "Root cause identified: Clock drift", icon: "🔍" },
+            { time: "12:16:00", event: "Agent synced NTP", icon: "🔧" },
+            { time: "12:20:50", event: "Service recovered", icon: "✅" },
+        ]
     },
 ];
 

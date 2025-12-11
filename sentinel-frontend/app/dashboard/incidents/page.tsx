@@ -1,85 +1,105 @@
 "use client";
 
-import { Spotlight } from "@/components/common/Spotlight";
-import { mockIncidents } from "@/lib/mockData";
-import type { Incident } from "@/lib/mockData";
-import { AlertTriangle, CheckCircle, Clock, XCircle, ChevronRight, Filter } from "lucide-react";
-import { Button } from "@/components/common/Button";
-import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
-
-const StatusIcon = ({ status }: { status: Incident["status"] }) => {
-    switch (status) {
-        case "resolved": return <CheckCircle className="h-5 w-5 text-green-500" />;
-        case "in-progress": return <Clock className="h-5 w-5 text-yellow-500 animate-pulse" />;
-        case "failed": return <XCircle className="h-5 w-5 text-red-500" />;
-        default: return null;
-    }
-};
-
-const SeverityBadge = ({ severity }: { severity: Incident["severity"] }) => {
-    const colors = {
-        critical: "bg-red-500/20 text-red-400 border-red-500/30",
-        warning: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-        info: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-    };
-    return (
-        <span className={cn("px-2 py-0.5 rounded-full text-xs font-medium border", colors[severity])}>
-            {severity}
-        </span>
-    );
-};
+import { IncidentCard } from "@/components/dashboard/IncidentCard";
+import { IncidentFilters } from "@/components/incidents/IncidentFilters";
+import { useIncidents } from "@/hooks/useIncidents";
+import { useState } from "react";
+import { Activity, Clock, AlertCircle } from "lucide-react";
 
 export default function IncidentsPage() {
+    const { incidents } = useIncidents();
+    const [search, setSearch] = useState("");
+    const [statusFilter, setStatusFilter] = useState("all");
+    const [severityFilter, setSeverityFilter] = useState("all");
+
+    // Filter Logic
+    const filteredIncidents = incidents.filter(incident => {
+        const matchesSearch = incident.title.toLowerCase().includes(search.toLowerCase()) ||
+            incident.serviceId.toLowerCase().includes(search.toLowerCase()) ||
+            incident.rootCause?.toLowerCase().includes(search.toLowerCase()) ||
+            incident.id.toLowerCase().includes(search.toLowerCase());
+
+        const matchesStatus = statusFilter === "all" || incident.status === statusFilter;
+        const matchesSeverity = severityFilter === "all" || incident.severity === severityFilter;
+
+        return matchesSearch && matchesStatus && matchesSeverity;
+    });
+
+    // Stats Logic
+    const totalIncidents = incidents.length;
+    const activeIncidents = incidents.filter(i => i.status !== "resolved").length;
+    // Mock MTTR calculation
+    const mttr = "12m";
+
     return (
-        <div className="space-y-8">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight mb-2">Incidents</h1>
-                    <p className="text-muted-foreground">Track and manage system incidents and agent actions.</p>
-                </div>
-                <Button variant="glass" className="gap-2">
-                    <Filter className="h-4 w-4" /> Filter
-                </Button>
+        <div className="container mx-auto max-w-7xl pb-20 space-y-8">
+            <div>
+                <h1 className="text-3xl font-bold tracking-tight mb-2 text-white">Incident History</h1>
+                <p className="text-muted-foreground">Comprehensive log of all system outages and agent remediations.</p>
             </div>
 
-            <div className="space-y-4">
-                {mockIncidents.map((incident, i) => (
-                    <motion.div
-                        key={incident.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.05 }}
-                    >
-                        <Spotlight className="p-5 bg-white/5 border-white/5 hover:border-primary/20 transition-all">
-                            <div className="flex items-start justify-between">
-                                <div className="flex items-start gap-4">
-                                    <div className="mt-1">
-                                        <StatusIcon status={incident.status} />
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center gap-3 mb-1">
-                                            <h3 className="font-semibold text-white">{incident.title}</h3>
-                                            <SeverityBadge severity={incident.severity} />
-                                        </div>
-                                        <p className="text-sm text-muted-foreground">
-                                            Service: <span className="text-white/80">{incident.serviceId}</span> • {incident.timestamp}
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <div className="text-right">
-                                        <p className="text-sm text-muted-foreground">Duration</p>
-                                        <p className="text-sm font-mono text-white">{incident.duration}</p>
-                                    </div>
-                                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-white">
-                                        <ChevronRight className="h-5 w-5" />
-                                    </Button>
-                                </div>
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                {/* Sidebar: Filters & Stats */}
+                <div className="space-y-6">
+                    {/* Stats Cards */}
+                    <div className="grid grid-cols-2 lg:grid-cols-1 gap-4">
+                        <div className="p-4 bg-white/5 border border-white/5 rounded-xl">
+                            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                                <Activity className="h-4 w-4" />
+                                <span className="text-xs uppercase tracking-wider font-semibold">Active</span>
                             </div>
-                        </Spotlight>
-                    </motion.div>
-                ))}
+                            <div className="text-2xl font-bold text-white">{activeIncidents}</div>
+                        </div>
+                        <div className="p-4 bg-white/5 border border-white/5 rounded-xl">
+                            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                                <Clock className="h-4 w-4" />
+                                <span className="text-xs uppercase tracking-wider font-semibold">MTTR</span>
+                            </div>
+                            <div className="text-2xl font-bold text-white">{mttr}</div>
+                        </div>
+                        <div className="p-4 bg-white/5 border border-white/5 rounded-xl col-span-2 lg:col-span-1">
+                            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                                <AlertCircle className="h-4 w-4" />
+                                <span className="text-xs uppercase tracking-wider font-semibold">Total</span>
+                            </div>
+                            <div className="text-2xl font-bold text-white">{totalIncidents}</div>
+                        </div>
+                    </div>
+
+                    <IncidentFilters
+                        search={search}
+                        setSearch={setSearch}
+                        statusFilter={statusFilter}
+                        setStatusFilter={setStatusFilter}
+                        severityFilter={severityFilter}
+                        setSeverityFilter={setSeverityFilter}
+                    />
+                </div>
+
+                {/* Main Content: Incident List */}
+                <div className="lg:col-span-3 space-y-4">
+                    <h2 className="text-lg font-semibold text-white mb-4">
+                        {filteredIncidents.length} Incident{filteredIncidents.length !== 1 && 's'} Found
+                    </h2>
+
+                    {filteredIncidents.length > 0 ? (
+                        <div className="space-y-4">
+                            {filteredIncidents.map((incident) => (
+                                <IncidentCard key={incident.id} incident={incident} />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-20 bg-white/5 border border-white/5 rounded-xl border-dashed">
+                            <p className="text-muted-foreground">No incidents found matches your criteria.</p>
+                            <button
+                                onClick={() => { setSearch(""); setStatusFilter("all"); setSeverityFilter("all"); }}
+                                className="text-primary text-sm mt-2 hover:underline"
+                            >
+                                Clear filters
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
