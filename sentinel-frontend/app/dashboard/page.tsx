@@ -28,6 +28,8 @@ export default function DashboardPage() {
                     ...service,
                     latency: realTime.currentResponseTime,
                     cpu: realTime.currentCpu,
+                    // Simulate uptime drop if down (Major penalty for visibility)
+                    uptime: realTime.currentErrorRate > 0.5 ? (Math.max(0, service.uptime - 20)).toFixed(2) as any : service.uptime,
                     status: realTime.currentErrorRate > 0.5 ? "down" : (realTime.currentErrorRate > 0.2 ? "degraded" : "healthy"),
                     trend: newTrend.length > 0 ? newTrend : service.trend,
                 };
@@ -38,6 +40,11 @@ export default function DashboardPage() {
 
     const activeIncident = incidents.find(i => i.id === activeIncidentId);
 
+    // Calculate real-time stats
+    const totalServices = liveServices.length;
+    const healthyServices = liveServices.filter(s => s.status === "healthy").length;
+    const realUptime = totalServices > 0 ? Math.round((healthyServices / totalServices) * 100) : 100;
+
     return (
         <div className="space-y-8 pb-20">
             <div>
@@ -46,9 +53,9 @@ export default function DashboardPage() {
             </div>
 
             <HealthSummary
-                uptime={mockMetrics.uptime}
-                servicesUp={liveServices.filter(s => s.status === "healthy").length}
-                totalServices={liveServices.length}
+                uptime={realUptime}
+                servicesUp={healthyServices}
+                totalServices={totalServices}
                 activeIncidents={incidents.filter(i => i.status !== "resolved").length}
             />
 

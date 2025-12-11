@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const axios = require('axios'); // Needed for manual actions
 
 const app = express();
 const PORT = 4000;
@@ -9,73 +10,109 @@ const PORT = 4000;
 app.use(cors());
 app.use(bodyParser.json());
 
-// --- IN-MEMORY DATABASE (Perfect for Hackathons) ---
+// --- IN-MEMORY DATABASE ---
 let systemStatus = {
   services: {
-    auth: { status: 'unknown', code: 0, lastUpdated: null },
-    payment: { status: 'unknown', code: 0, lastUpdated: null },
-    notification: { status: 'unknown', code: 0, lastUpdated: null }
+    auth: { code: 0 },
+    payment: { code: 0 },
+    notification: { code: 0 }
   },
-  aiAnalysis: "Waiting for AI report...",
   lastUpdated: new Date()
 };
 
-let activityLog = []; // Stores history of events
+let activityLog = []; // Events for the feed
+let aiInsights = [];  // Deep dive reasoning for the "Insights" panel
 
-// --- ENDPOINTS FOR FRONTEND ---
+// --- HELPER: Add to Activity Log ---
+const addActivity = (message, type = 'info') => {
+  const entry = {
+    id: Date.now(),
+    timestamp: new Date(),
+    message,
+    type // 'info', 'alert', 'success'
+  };
+  activityLog.unshift(entry);
+  if (activityLog.length > 50) activityLog.pop(); // Keep last 50
+  return entry;
+};
 
-// 1. Get Overall System Status
+// --- ENDPOINTS ---
+
+// 1. Get Status
 app.get('/api/status', (req, res) => {
   res.json(systemStatus);
 });
 
-// 2. Get Activity History
+// 2. Get Activity Feed
 app.get('/api/activity', (req, res) => {
-  res.json(activityLog.slice(0, 50)); // Return last 50 events
+  res.json({ activity: activityLog });
+});
+
+// 3. Get AI Insights
+app.get('/api/insights', (req, res) => {
+  res.json({ insights: aiInsights });
+});
+
+// 4. Manual Actions (Triggered by Dashboard Buttons)
+app.post('/api/action/:service/:type', async (req, res) => {
+  const { service, type } = req.params;
+  const serviceMap = {
+    'auth': '3001',
+    'payment': '3002',
+    'notification': '3003'
+  };
+
+  const port = serviceMap[service];
+  if (!port) return res.status(400).json({ error: 'Unknown service' });
+
+  try {
+    // Call the service's simulation endpoint
+    // If type is 'restart', we simulate making it healthy
+    const mode = type === 'restart' || type === 'heal' ? 'healthy' : type;
+
+    await axios.post(`http://${service}-service:${port}/simulate/${mode}`);
+
+    addActivity(`Manual Action: Triggered ${type} on ${service}`, 'success');
+    res.json({ success: true, message: `Executed ${type} on ${service}` });
+  } catch (error) {
+    addActivity(`Failed to execute ${type} on ${service}`, 'alert');
+    res.status(500).json({ error: 'Action failed' });
+  }
 });
 
 // --- WEBHOOK FOR KESTRA ---
-
-// 3. Receive Data from Kestra AI
 app.post('/api/kestra-webhook', (req, res) => {
-  const { aiReport, metrics } = req.body;
+  const { aiReport, metrics, raw_ai } = req.body; // raw_ai is the full JSON from AI
 
-  console.log('📦 Received update from Kestra:', aiReport);
+  console.log('📦 Received Kestra Update');
 
-  // Update System Status
-  systemStatus.aiAnalysis = aiReport;
+  // Update Status
   systemStatus.lastUpdated = new Date();
+  if (metrics) systemStatus.services = metrics;
 
-  if (metrics) {
-    systemStatus.services = metrics;
+  // Process AI Report
+  // If the report contains "CRITICAL" or "DEGRADED", log it as an alert
+  if (aiReport && (aiReport.includes("CRITICAL") || aiReport.includes("DEGRADED"))) {
+    addActivity(aiReport, 'alert');
+  } else if (aiReport && aiReport.includes("HEALTHY")) {
+    // Only log healthy if previous state was bad, otherwise it's spammy
+    // For now, let's just log it so you see it working
+    addActivity("System Health Check: All Systems Normal", 'success');
   }
 
-  // Add to Activity Log if it's NOT healthy or if it's a significant update
-  // We'll log everything for now to see activity in the demo
-  const isHealthy = aiReport && aiReport.includes("HEALTHY");
-  
-  if (!isHealthy) {
-      activityLog.unshift({
-        id: Date.now(),
-        message: aiReport,
-        type: 'alert',
-        timestamp: new Date()
-      });
-  } else {
-    // Optional: Log healthy checks too, but maybe less frequently or just one "All Clear"
-    // For demo visual density, might be nice to log healthy check-ins briefly or skip
-    // Let's keep it clean: only alerts in the activity log for now
-  }
-
-  // Keep log size manageable
-  if (activityLog.length > 50) {
-      activityLog = activityLog.slice(0, 50);
+  // Store detailed insight
+  if (raw_ai) {
+    aiInsights.unshift({
+      id: Date.now(),
+      timestamp: new Date(),
+      analysis: raw_ai
+    });
+    if (aiInsights.length > 20) aiInsights.pop();
   }
 
   res.json({ success: true });
 });
 
-// Start Server
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Sentinel Backend running on http://0.0.0.0:${PORT}`);
 });

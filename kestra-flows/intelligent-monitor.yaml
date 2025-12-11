@@ -26,6 +26,10 @@ tasks:
   - id: ai-analysis
     type: io.kestra.plugin.core.http.Request
     uri: https://api.groq.com/openai/v1/chat/completions
+    retry:
+      type: constant
+      interval: PT5S
+      maxAttempt: 3
     method: POST
     headers:
       Authorization: "Bearer {{ secret('GROQ_API_KEY') }}"
@@ -54,7 +58,7 @@ tasks:
       🤖 SENTINEL AI REPORT:
       {{ outputs['ai-analysis'].body | jq(".choices[0].message.content") | first }}
 
-  # 4. Push Data to Backend Dashboard
+  # 4. Push Data to Backend Dashboard (Upgraded)
   - id: push-to-dashboard
     type: io.kestra.plugin.core.http.Request
     uri: http://backend:4000/api/kestra-webhook
@@ -63,12 +67,27 @@ tasks:
     body: |
       {
         "aiReport": {{ outputs['ai-analysis'].body | jq(".choices[0].message.content") | first | json }},
+        "raw_ai": {{ outputs['ai-analysis'].body | json }},
         "metrics": {
           "auth": { "code": {{ outputs['get-auth'] is defined and outputs['get-auth'] is not null ? (outputs['get-auth'].code ?? 500) : 500 }} },
           "payment": { "code": {{ outputs['get-payment'] is defined and outputs['get-payment'] is not null ? (outputs['get-payment'].code ?? 500) : 500 }} },
           "notification": { "code": {{ outputs['get-notify'] is defined and outputs['get-notify'] is not null ? (outputs['get-notify'].code ?? 500) : 500 }} }
         }
       }
+
+  # 5. Autonomous Healing (If Auth is Down -> Restart it)
+  - id: check-auth-critical
+    type: io.kestra.plugin.core.flow.If
+    condition: "{{ outputs['get-auth'] is null or (outputs['get-auth'].code | default(500)) == 500 }}"
+    then:
+      - id: heal-auth-service
+        type: io.kestra.plugin.core.http.Request
+        uri: http://auth-service:3001/simulate/healthy
+        method: POST
+      
+      - id: log-healing
+        type: io.kestra.plugin.core.log.Log
+        message: "🚑 CRITICAL DETECTED: Sentinel is auto-healing the Auth Service..."
 
 triggers:
   - id: monitor-schedule
