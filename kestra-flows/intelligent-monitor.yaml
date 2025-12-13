@@ -163,7 +163,5 @@ tasks:
 triggers:
   - id: monitor-schedule
     type: io.kestra.plugin.core.trigger.Schedule
-    cron: "*/30 * * * * *"
-    withSeconds: true
+    cron: "*/1 * * * *"
     timezone: "Asia/Kolkata"
-    lateMaximumDelay: 600000

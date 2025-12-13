@@ -38,7 +38,7 @@ async function checkServiceHealth() {
 
   for (const service of services) {
     try {
-      const response = await axios.get(service.url, { timeout: 3000 });
+      const response = await axios.get(service.url, { timeout: 30000 });
       console.log(`✅ ${service.name}: ${response.status} - ${response.data.status}`);
       systemStatus.services[service.name] = {
         status: 'healthy',
