@@ -151,11 +151,6 @@ $ sentinel report
    1 incidents, 1 recoveries documented
 ```
 
-<div align="center">
-  <img src="./screenshots/cli-report.png" alt="Sentinel CLI Report" width="700"/>
-  <p><em>Generated incident report with AI analysis and recovery timeline</em></p>
-</div>
-
 **Report Output:**
 ```markdown
 # 🛡️ Sentinel Incident Report
@@ -374,27 +369,15 @@ The report includes:
 
 ---
 
-## 📊 Live Demo
+## 🤖 Cline Integration
 
-### System States
+Sentinel was built with **Cline**, leveraging AI-assisted development throughout the project. Cline helped us:
+- Design the autonomous Kestra workflow architecture
+- Generate the CLI command structure with best practices
+- Implement error handling and edge cases
+- Create the real-time dashboard components
 
-**Healthy State:**
-![Healthy Dashboard](./screenshots/system-healthy.png)
-
-**Critical State (Auth Down):**
-![Critical Dashboard](./screenshots/system-down.png)
-
-### Cline Development Process
-
-We used **Cline** extensively during development:
-
-![Cline Usage 1](./screenshots/cline-usage-1.png)
-*Cline helping architect the Kestra workflow*
-
-![Cline Usage 2](./screenshots/cline-usage-2.png)
-*Cline generating the CLI commands structure*
-
-For full documentation on our Cline integration, see [CLINE_USAGE.md](docs/CLINE_USAGE.md).
+For complete documentation on our Cline development process, see [CLINE_USAGE.md](docs/CLINE_USAGE.md).
 
 ---
 
