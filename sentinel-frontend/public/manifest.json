@@ -1,0 +1,21 @@
+{
+  "name": "Sentinel - AI DevOps Intelligence",
+  "short_name": "Sentinel",
+  "description": "Autonomous AI agent that monitors your infrastructure 24/7, predicts failures, and automatically heals incidents.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#22d3ee",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

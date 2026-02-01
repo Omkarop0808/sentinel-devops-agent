@@ -1,0 +1,53 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="shieldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22d3ee" />
+      <stop offset="100%" stop-color="#a855f7" />
+    </linearGradient>
+    <linearGradient id="innerGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#a855f7" stop-opacity="0.1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Shield Outline -->
+  <path
+    d="M32 4L8 14V30C8 44.36 18.04 57.44 32 60C45.96 57.44 56 44.36 56 30V14L32 4Z"
+    stroke="url(#shieldGradient)"
+    stroke-width="3"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    fill="url(#innerGradient)"
+  />
+  
+  <!-- Inner Signal Waves -->
+  <path
+    d="M32 20C26.48 20 22 24.48 22 30C22 35.52 26.48 40 32 40"
+    stroke="url(#shieldGradient)"
+    stroke-width="2.5"
+    stroke-linecap="round"
+    fill="none"
+    opacity="0.6"
+  />
+  <path
+    d="M32 26C29.79 26 28 27.79 28 30C28 32.21 29.79 34 32 34"
+    stroke="url(#shieldGradient)"
+    stroke-width="2.5"
+    stroke-linecap="round"
+    fill="none"
+    opacity="0.8"
+  />
+  
+  <!-- Center Dot -->
+  <circle cx="32" cy="30" r="3" fill="url(#shieldGradient)" />
+  
+  <!-- Checkmark -->
+  <path
+    d="M26 46L30 50L38 42"
+    stroke="url(#shieldGradient)"
+    stroke-width="2.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    fill="none"
+  />
+</svg>

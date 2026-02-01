@@ -11,8 +11,9 @@ export function DashboardHeader() {
     const [profileOpen, setProfileOpen] = useState(false);
 
     return (
-        <header className="h-16 flex items-center justify-between px-6 border-b border-white/5 bg-background/50 backdrop-blur-md sticky top-0 z-30">
-            <div className="flex items-center gap-4 w-full max-w-md">
+        <header className="h-16 flex items-center justify-between px-4 lg:px-6 border-b border-white/5 bg-background/50 backdrop-blur-md sticky top-0 z-30">
+            {/* Search - Hidden on mobile, visible on tablet+ */}
+            <div className="hidden md:flex items-center gap-4 w-full max-w-md">
                 <div className="relative w-full">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <input
@@ -23,6 +24,9 @@ export function DashboardHeader() {
                     />
                 </div>
             </div>
+
+            {/* Spacer for mobile to push icons to right */}
+            <div className="md:hidden flex-1 pl-12" />
 
             <div className="flex items-center gap-4 relative">
                 <Button

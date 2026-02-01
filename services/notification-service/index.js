@@ -7,6 +7,8 @@ let healthStatus = 'healthy';
 app.get('/health', (req, res) => {
   if (healthStatus === 'slow') {
     setTimeout(() => res.json({ status: 'slow', timestamp: new Date() }), 2000);
+  } else if (healthStatus === 'degraded') {
+    res.status(429).json({ status: 'degraded', error: 'SMTP server degraded', message: 'Email queue backlog detected' });
   } else if (healthStatus === 'down') {
     res.status(500).json({ status: 'down', error: 'SMTP server unreachable' });
   } else {

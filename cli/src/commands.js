@@ -31,9 +31,18 @@ export const showStatus = async () => {
         if (code >= 500) {
             statusColor = chalk.red;
             statusText = 'CRITICAL';
-        } else if (code === 0) {
+        } else if (code >= 400 && code < 500) {
             statusColor = chalk.yellow;
+            statusText = 'DEGRADED';
+        } else if (code === 0) {
+            statusColor = chalk.gray;
             statusText = 'UNKNOWN';
+        } else if (code >= 200 && code < 300) {
+            statusColor = chalk.green;
+            statusText = 'HEALTHY';
+        } else {
+            statusColor = chalk.yellow;
+            statusText = 'DEGRADED';
         }
 
         table.push([

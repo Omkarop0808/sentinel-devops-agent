@@ -49,27 +49,31 @@ async function checkServiceHealth() {
       const code = error.response?.status || 503;
       console.log(`❌ ${service.name}: ERROR - ${error.code || error.message}`);
 
+      const status = code >= 500 ? 'critical' : 'degraded';
       systemStatus.services[service.name] = {
-        status: code >= 500 ? 'critical' : 'degraded',
+        status: status,
         code: code,
         lastUpdated: new Date()
       };
 
-      // Log the failure
-      if (code >= 500) {
-        const lastLog = activityLog[0];
-        const isDuplicate = lastLog && lastLog.message.includes(service.name.toUpperCase()) && lastLog.message.includes("DOWN");
+      // Log the failure (both critical and degraded)
+      const lastLog = activityLog[0];
+      const statusText = code >= 500 ? 'DOWN' : 'DEGRADED';
+      const isDuplicate = lastLog && 
+        lastLog.message.includes(service.name.toUpperCase()) && 
+        lastLog.message.includes(statusText);
 
-        if (!isDuplicate) {
-          activityLog.unshift({
-            id: Date.now(),
-            message: `${service.name.toUpperCase()} service is DOWN (HTTP ${code})`,
-            type: 'alert',
-            severity: 'critical',
-            timestamp: new Date()
-          });
-          if (activityLog.length > 50) activityLog.splice(50);
-        }
+      if (!isDuplicate) {
+        activityLog.unshift({
+          id: Date.now(),
+          message: code >= 500 
+            ? `${service.name.toUpperCase()} service is DOWN (HTTP ${code})`
+            : `${service.name.toUpperCase()} service is DEGRADED (HTTP ${code})`,
+          type: 'alert',
+          severity: code >= 500 ? 'critical' : 'warning',
+          timestamp: new Date()
+        });
+        if (activityLog.length > 50) activityLog.splice(50);
       }
     }
   }
@@ -167,6 +171,8 @@ app.post('/api/action/:service/:type', async (req, res) => {
     let mode = 'healthy';
     if (type === 'restart' || type === 'heal') mode = 'healthy';
     if (type === 'crash' || type === 'down') mode = 'down';
+    if (type === 'degraded') mode = 'degraded';
+    if (type === 'slow') mode = 'slow';
 
     await axios.post(`http://localhost:${port}/simulate/${mode}`, {}, { timeout: 5000 });
 
