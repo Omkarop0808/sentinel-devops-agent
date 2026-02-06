@@ -20,8 +20,8 @@ async function listContainers(filters = {}) {
       name: container.Names[0].replace('/', ''),
       image: container.Image,
       status: container.State,
-      health: container.Status.includes('healthy') ? 'healthy' :
-        container.Status.includes('unhealthy') ? 'unhealthy' : 'unknown',
+      health: container.Status.includes('unhealthy') ? 'unhealthy' :
+        container.Status.includes('healthy') ? 'healthy' : 'unknown',
       ports: container.Ports,
       created: new Date(container.Created * 1000)
     }));

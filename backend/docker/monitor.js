@@ -47,15 +47,22 @@ class ContainerMonitor {
     }
 
     parseStats(stats) {
-        // Calculate CPU percentage
+        // Calculate CPU percentage safely
         let cpuPercent = 0.0;
-        const cpuDelta = stats.cpu_stats.cpu_usage.total_usage -
-            stats.precpu_stats.cpu_usage.total_usage;
-        const systemDelta = stats.cpu_stats.system_cpu_usage -
-            stats.precpu_stats.system_cpu_usage;
 
-        if (systemDelta > 0 && stats.cpu_stats.online_cpus > 0) {
-            cpuPercent = (cpuDelta / systemDelta) * stats.cpu_stats.online_cpus * 100;
+        // Defensive read of nested properties
+        const cpuUsage = stats.cpu_stats?.cpu_usage?.total_usage || 0;
+        const preCpuUsage = stats.precpu_stats?.cpu_usage?.total_usage || 0;
+        const systemCpuUsage = stats.cpu_stats?.system_cpu_usage || 0;
+        const preSystemCpuUsage = stats.precpu_stats?.system_cpu_usage || 0;
+        // Default to 1 online cpu if missing to avoid division issues (stats often omit this on some platforms)
+        const onlineCpus = stats.cpu_stats?.online_cpus || stats.cpu_stats?.cpu_usage?.percpu_usage?.length || 1;
+
+        const cpuDelta = cpuUsage - preCpuUsage;
+        const systemDelta = systemCpuUsage - preSystemCpuUsage;
+
+        if (systemDelta > 0 && cpuDelta > 0) {
+            cpuPercent = (cpuDelta / systemDelta) * onlineCpus * 100;
         }
 
         // Calculate memory percentage safely
@@ -85,11 +92,13 @@ class ContainerMonitor {
     }
 
     formatBytes(bytes) {
-        if (!bytes || bytes === 0) return '0 B';
+        if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
         const k = 1024;
-        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        // Clamp index to valid range
+        const safeIndex = Math.min(Math.max(i, 0), sizes.length - 1);
+        return parseFloat((bytes / Math.pow(k, safeIndex)).toFixed(2)) + ' ' + sizes[safeIndex];
     }
 
     getMetrics(containerId) {
