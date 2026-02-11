@@ -40,11 +40,6 @@ export const useNotifications = create<NotificationState>()(
         // Get preferences
         const prefs = useNotificationPreferences.getState();
         
-        // Check if in DND period
-        if (prefs.isInDndPeriod()) {
-          return; // Silently ignore notifications during DND
-        }
-
         // Check severity filter
         const severityMap = {
           'info': 0,
@@ -59,8 +54,10 @@ export const useNotifications = create<NotificationState>()(
         const filterLevel = prefs.filterBySeverity === 'all' ? 0 : 
                            prefs.filterBySeverity === 'warning' ? 1 : 2;
         
+        // Intentionally discard notifications below severity threshold
+        // These notifications are not stored and cannot be recovered if filter is changed later
         if (notificationSeverity < filterLevel) {
-          return; // Filter out notifications below threshold
+          return;
         }
 
         const newNotification: Notification = {
@@ -70,15 +67,21 @@ export const useNotifications = create<NotificationState>()(
           read: false,
         };
 
-        // Always add to store for persistence
+        // Always persist notification to store
         set((state) => ({
           notifications: [newNotification, ...state.notifications],
           unreadCount: state.unreadCount + 1,
         }));
 
+        // Check if in DND period - suppress UI/sound delivery but notification is already persisted above
+        // User can view missed notifications in notification center after DND period ends
+        if (prefs.isInDndPeriod()) {
+          return;
+        }
+
        
-        // Play sound for critical alerts if enabled
-        if (prefs.soundEnabled && (notification.type === "error" || notification.type === "incident")) {
+        // Play sound for critical alerts if enabled and toast channel is on
+        if (prefs.channels.toast && prefs.soundEnabled && (notification.type === "error" || notification.type === "incident")) {
           try {
             const audio = new Audio("/sounds/alert.mp3");
             audio.volume = prefs.volume / 100; // Use preference volume
