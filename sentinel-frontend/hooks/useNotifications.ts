@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { useNotificationPreferences } from "./useNotificationPreferences";
 
 export type NotificationType =
   | "info"
@@ -36,6 +37,33 @@ export const useNotifications = create<NotificationState>()(
       notifications: [],
       unreadCount: 0,
       addNotification: (notification) => {
+        // Get preferences
+        const prefs = useNotificationPreferences.getState();
+        
+        // Check if in DND period
+        if (prefs.isInDndPeriod()) {
+          return; // Silently ignore notifications during DND
+        }
+
+        // Check severity filter
+        const severityMap = {
+          'info': 0,
+          'success': 0,
+          'warning': 1,
+          'error': 2,
+          'incident': 2,
+          'resolved': 0,
+          'critical': 2
+        };
+        
+        const notificationSeverity = severityMap[notification.type] || 0;
+        const filterLevel = prefs.filterBySeverity === 'all' ? 0 : 
+                           prefs.filterBySeverity === 'warning' ? 1 : 2;
+        
+        if (notificationSeverity < filterLevel) {
+          return; // Filter out notifications below threshold
+        }
+
         const newNotification: Notification = {
           ...notification,
           id: crypto.randomUUID(),
@@ -43,17 +71,20 @@ export const useNotifications = create<NotificationState>()(
           read: false,
         };
 
-        set((state) => ({
-          notifications: [newNotification, ...state.notifications],
-          unreadCount: state.unreadCount + 1,
-        }));
+        // Only add to toast if channel is enabled
+        if (prefs.channels.toast) {
+          set((state) => ({
+            notifications: [newNotification, ...state.notifications],
+            unreadCount: state.unreadCount + 1,
+          }));
+        }
 
        
-        // Play sound for critical alerts
-        if (notification.type === "error" || notification.type === "incident") {
+        // Play sound for critical alerts if enabled
+        if (prefs.soundEnabled && (notification.type === "error" || notification.type === "incident")) {
           try {
             const audio = new Audio("/sounds/alert.mp3");
-            audio.volume = 0.5; // Reasonable default volume
+            audio.volume = prefs.volume / 100; // Use preference volume
             
             // Check if play is supported and handle the promise
             const playPromise = audio.play();
@@ -70,8 +101,9 @@ export const useNotifications = create<NotificationState>()(
           }
         }
 
-        // Trigger System Notification if supported and permission granted
+        // Trigger System Notification if channel enabled and permission granted
         if (
+          prefs.channels.system &&
           typeof window !== "undefined" &&
           "Notification" in window &&
           Notification.permission === "granted"
