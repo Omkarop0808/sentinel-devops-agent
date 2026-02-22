@@ -54,8 +54,10 @@ async function saveToFile(markdown, incident) {
       await fs.mkdir(dir, { recursive: true });
     }
     
-    // Generate filename
-    let filename = generateFilename(incident);
+    // Generate filename and capture original
+    const originalFilename = generateFilename(incident);
+    const originalBaseName = originalFilename.replace('.md', '');
+    let filename = originalFilename;
     let filepath = path.join(dir, filename);
     
     // Handle filename collisions
@@ -63,9 +65,8 @@ async function saveToFile(markdown, incident) {
     while (true) {
       try {
         await fs.access(filepath);
-        // File exists, try with suffix
-        const baseName = filename.replace('.md', '');
-        filename = `${baseName}-${counter}.md`;
+        // File exists, try with suffix using original base name
+        filename = `${originalBaseName}-${counter}.md`;
         filepath = path.join(dir, filename);
         counter++;
       } catch {
@@ -178,7 +179,7 @@ async function publishToEmail(postmortem, filePath) {
   }
   
   try {
-    const transporter = nodemailer.createTransporter({
+    const transporter = nodemailer.createTransport({
       host: smtpConfig.host,
       port: parseInt(smtpConfig.port) || 587,
       secure: false,

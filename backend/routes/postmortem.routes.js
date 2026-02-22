@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { generatePostMortem } = require('../lib/postmortem-generator');
 const { publishPostMortem } = require('../lib/postmortem-publisher');
+const { requireAuth } = require('../auth/middleware');
 const fs = require('fs').promises;
 const path = require('path');
 
@@ -20,7 +21,7 @@ router.use((req, res, next) => {
  * POST /api/postmortem/generate
  * Generate post-mortem for an incident
  */
-router.post('/generate', async (req, res) => {
+router.post('/generate', requireAuth, async (req, res) => {
   try {
     const { incidentId, options = {} } = req.body;
     
@@ -35,8 +36,8 @@ router.post('/generate', async (req, res) => {
       });
     }
     
-    // Find incident in aiLogs
-    const incident = aiLogs.find(log => log.id === incidentId);
+    // Find incident in aiLogs - normalize types for comparison
+    const incident = aiLogs.find(log => Number(log.id) === Number(incidentId));
     
     if (!incident) {
       return res.status(404).json({
@@ -58,11 +59,14 @@ router.post('/generate', async (req, res) => {
     
     console.log(`[PostMortem API] Post-mortem generated successfully for incident ${incidentId}`);
     
+    // Return only filename, not absolute path
+    const filename = publishingStatus.file?.path ? path.basename(publishingStatus.file.path) : null;
+    
     res.json({
       success: true,
       postmortem: {
         markdown: postmortem.markdown,
-        filePath: publishingStatus.file?.path,
+        filePath: filename,
         metadata: {
           incidentId: postmortem.incidentId,
           generatedAt: postmortem.generatedAt,
@@ -71,7 +75,10 @@ router.post('/generate', async (req, res) => {
           estimatedReadTime: postmortem.metadata.estimatedReadTime
         }
       },
-      publishing: publishingStatus
+      publishing: {
+        ...publishingStatus,
+        file: publishingStatus.file ? { success: publishingStatus.file.success, filename } : undefined
+      }
     });
   } catch (error) {
     console.error('[PostMortem API] Generation error:', error.message);
@@ -99,7 +106,8 @@ router.post('/generate', async (req, res) => {
       error: {
         code: errorCode,
         message: error.message,
-        details: error.stack
+        // Only include stack trace in development
+        ...(process.env.NODE_ENV === 'development' && { details: error.stack })
       }
     });
   }
@@ -109,7 +117,7 @@ router.post('/generate', async (req, res) => {
  * GET /api/postmortem/list
  * List all generated post-mortems
  */
-router.get('/list', async (req, res) => {
+router.get('/list', requireAuth, async (req, res) => {
   try {
     const dir = path.join(process.cwd(), 'sentinel-postmortems');
     
@@ -160,7 +168,7 @@ router.get('/list', async (req, res) => {
  * GET /api/postmortem/:filename
  * Get specific post-mortem content
  */
-router.get('/:filename', async (req, res) => {
+router.get('/:filename', requireAuth, async (req, res) => {
   try {
     const { filename } = req.params;
     

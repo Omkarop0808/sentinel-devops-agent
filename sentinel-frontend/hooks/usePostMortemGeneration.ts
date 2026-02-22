@@ -1,5 +1,8 @@
 import { useState } from 'react';
 
+// API base URL - configurable for different environments
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
 interface PostMortemMetadata {
   incidentId: number;
   generatedAt: string;
@@ -34,7 +37,7 @@ export function usePostMortemGeneration() {
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:4000/api/postmortem/generate', {
+      const response = await fetch(`${API_BASE_URL}/api/postmortem/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ incidentId })
@@ -60,7 +63,7 @@ export function usePostMortemGeneration() {
   const downloadPostMortem = async (filename: string) => {
     try {
       // Fetch the file content from backend
-      const response = await fetch(`http://localhost:4000/api/postmortem/${filename}`);
+      const response = await fetch(`${API_BASE_URL}/api/postmortem/${filename}`);
       if (!response.ok) throw new Error('Failed to fetch post-mortem');
       
       const data = await response.json();
