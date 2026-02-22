@@ -1,15 +1,17 @@
 "use client";
 
 import { Incident } from "@/lib/mockData";
-import { Zap, Search } from "lucide-react";
+import { Zap, Search, FileText } from "lucide-react";
 import { Button } from "@/components/common/Button";
 
 interface IncidentDetailProps {
     incident: Incident;
     onViewReasoning?: (id: string) => void;
+    onGeneratePostMortem?: (incidentId: number) => void;
+    isGeneratingPostMortem?: (incidentId: number) => boolean;
 }
 
-export function IncidentDetail({ incident, onViewReasoning }: IncidentDetailProps) {
+export function IncidentDetail({ incident, onViewReasoning, onGeneratePostMortem, isGeneratingPostMortem }: IncidentDetailProps) {
     return (
         <div className="p-4 bg-black/20 border-t border-white/5 space-y-4">
             {/* Root Cause & Agent Action */}
@@ -76,11 +78,32 @@ export function IncidentDetail({ incident, onViewReasoning }: IncidentDetailProp
             )}
 
             {/* Actions */}
-            <div className="flex justify-end pt-2">
+            <div className="flex flex-wrap justify-end gap-2 pt-4 border-t border-white/5">
+                {onGeneratePostMortem && (
+                    <Button
+                        size="sm"
+                        variant="default"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            // Convert string ID to number for backend API
+                            const numericId = typeof incident.id === 'string' ? parseInt(incident.id, 10) : incident.id;
+                            onGeneratePostMortem(numericId);
+                        }}
+                        disabled={isGeneratingPostMortem ? isGeneratingPostMortem(typeof incident.id === 'string' ? parseInt(incident.id, 10) : incident.id) : false}
+                        className="min-w-[180px]"
+                    >
+                        <FileText className="h-3 w-3 mr-2" />
+                        {(isGeneratingPostMortem && isGeneratingPostMortem(typeof incident.id === 'string' ? parseInt(incident.id, 10) : incident.id)) ? 'Generating...' : 'Generate Post-Mortem'}
+                    </Button>
+                )}
                 <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => onViewReasoning?.(incident.id)}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onViewReasoning?.(incident.id);
+                    }}
+                    className="min-w-[160px]"
                 >
                     <Search className="h-3 w-3 mr-2" />
                     View Agent Reasoning
