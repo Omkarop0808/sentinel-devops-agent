@@ -12,6 +12,10 @@ interface IncidentDetailProps {
 }
 
 export function IncidentDetail({ incident, onViewReasoning, onGeneratePostMortem, isGeneratingPostMortem }: IncidentDetailProps) {
+    // Convert and validate incident ID once
+    const postMortemId = typeof incident.id === 'string' ? parseInt(incident.id, 10) : incident.id;
+    const isValidId = Number.isFinite(postMortemId) && postMortemId > 0;
+    
     return (
         <div className="p-4 bg-black/20 border-t border-white/5 space-y-4">
             {/* Root Cause & Agent Action */}
@@ -85,15 +89,15 @@ export function IncidentDetail({ incident, onViewReasoning, onGeneratePostMortem
                         variant="default"
                         onClick={(e) => {
                             e.stopPropagation();
-                            // Convert string ID to number for backend API
-                            const numericId = typeof incident.id === 'string' ? parseInt(incident.id, 10) : incident.id;
-                            onGeneratePostMortem(numericId);
+                            if (isValidId) {
+                                onGeneratePostMortem(postMortemId);
+                            }
                         }}
-                        disabled={isGeneratingPostMortem ? isGeneratingPostMortem(typeof incident.id === 'string' ? parseInt(incident.id, 10) : incident.id) : false}
+                        disabled={!isValidId || (isGeneratingPostMortem ? isGeneratingPostMortem(postMortemId) : false)}
                         className="min-w-[180px]"
                     >
                         <FileText className="h-3 w-3 mr-2" />
-                        {(isGeneratingPostMortem && isGeneratingPostMortem(typeof incident.id === 'string' ? parseInt(incident.id, 10) : incident.id)) ? 'Generating...' : 'Generate Post-Mortem'}
+                        {!isValidId ? 'Invalid ID' : (isGeneratingPostMortem && isGeneratingPostMortem(postMortemId)) ? 'Generating...' : 'Generate Post-Mortem'}
                     </Button>
                 )}
                 <Button

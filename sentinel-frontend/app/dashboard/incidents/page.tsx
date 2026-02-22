@@ -27,6 +27,7 @@ function IncidentsContent() {
     const { generatePostMortem, isGenerating, error: postMortemError, lastGenerated, downloadPostMortem } = usePostMortemGeneration();
     const [showSuccessMessage, setShowSuccessMessage] = useState(false);
     const [showErrorMessage, setShowErrorMessage] = useState(false);
+    const [lastGeneratedIncidentId, setLastGeneratedIncidentId] = useState<number | null>(null);
 
     // Initialize state from URL params
     const [filters, setFilters] = useState<FilterState>(() => {
@@ -117,6 +118,7 @@ function IncidentsContent() {
     const handleGeneratePostMortem = useCallback(async (incidentId: number) => {
         try {
             await generatePostMortem(incidentId);
+            setLastGeneratedIncidentId(incidentId);
             setShowSuccessMessage(true);
             setTimeout(() => setShowSuccessMessage(false), 5000);
         } catch (error) {
@@ -126,23 +128,26 @@ function IncidentsContent() {
     }, [generatePostMortem]);
 
     const handleDownloadPostMortem = useCallback(() => {
-        if (lastGenerated?.postmortem?.filePath) {
-            const filename = lastGenerated.postmortem.filePath.split(/[/\\]/).pop() || 'postmortem.md';
-            downloadPostMortem(filename);
+        if (lastGeneratedIncidentId !== null) {
+            const generated = lastGenerated(lastGeneratedIncidentId);
+            if (generated?.postmortem?.filePath) {
+                const filename = generated.postmortem.filePath.split(/[/\\]/).pop() || 'postmortem.md';
+                downloadPostMortem(filename);
+            }
         }
-    }, [lastGenerated, downloadPostMortem]);
+    }, [lastGeneratedIncidentId, lastGenerated, downloadPostMortem]);
 
     return (
         <div className="container mx-auto max-w-7xl pb-20 space-y-6">
             {/* Success/Error Messages */}
-            {showSuccessMessage && lastGenerated && (
+            {showSuccessMessage && lastGeneratedIncidentId !== null && lastGenerated(lastGeneratedIncidentId) && (
                 <div className="fixed top-4 right-4 z-50 bg-green-500/10 border border-green-500/30 rounded-lg p-4 max-w-md">
                     <div className="flex items-start gap-3">
                         <CheckCircle className="h-5 w-5 text-green-400 flex-shrink-0 mt-0.5" />
                         <div className="flex-1">
                             <h4 className="text-sm font-semibold text-green-400 mb-1">Post-Mortem Generated!</h4>
                             <p className="text-xs text-muted-foreground mb-2">
-                                Successfully generated post-mortem for incident {lastGenerated.postmortem.metadata.incidentId}
+                                Successfully generated post-mortem for incident {lastGenerated(lastGeneratedIncidentId)?.postmortem.metadata.incidentId}
                             </p>
                             <button
                                 onClick={handleDownloadPostMortem}

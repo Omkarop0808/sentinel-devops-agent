@@ -213,6 +213,22 @@ async function publishToEmail(postmortem, filePath) {
 }
 
 /**
+ * HTML-escape special characters to prevent XSS
+ * @param {String} text - Text to escape
+ * @returns {String} Escaped text
+ */
+function escapeHtml(text) {
+  const htmlEscapeMap = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  };
+  return text.replace(/[&<>"']/g, char => htmlEscapeMap[char]);
+}
+
+/**
  * Create Confluence page with post-mortem
  * @param {Object} postmortem - Post-mortem object
  * @returns {Promise<Object>} Success status
@@ -227,8 +243,11 @@ async function publishToConfluence(postmortem) {
   }
   
   try {
+    // HTML-escape markdown content before conversion
+    const escapedMarkdown = escapeHtml(postmortem.markdown);
+    
     // Convert markdown to Confluence storage format (simplified)
-    const storageFormat = postmortem.markdown
+    const storageFormat = escapedMarkdown
       .replace(/^## (.+)$/gm, '<h2>$1</h2>')
       .replace(/^# (.+)$/gm, '<h1>$1</h1>')
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
@@ -282,14 +301,46 @@ async function publishToGitHub(postmortem, filePath) {
   try {
     const filename = path.basename(filePath);
     const content = Buffer.from(postmortem.markdown).toString('base64');
+    const githubPath = `postmortems/${filename}`;
+    
+    // Check if file already exists to get sha for update
+    let existingSha = null;
+    try {
+      const getResponse = await axios.get(
+        `https://api.github.com/repos/${githubRepo}/contents/${githubPath}`,
+        {
+          headers: {
+            'Authorization': `token ${githubToken}`,
+            'Accept': 'application/vnd.github.v3+json'
+          },
+          params: { ref: githubBranch },
+          timeout: 10000
+        }
+      );
+      existingSha = getResponse.data.sha;
+    } catch (error) {
+      // 404 means file doesn't exist, which is fine for creation
+      if (error.response?.status !== 404) {
+        throw error;
+      }
+    }
+    
+    // PUT with sha if updating, without sha if creating
+    const putPayload = {
+      message: existingSha 
+        ? `Update post-mortem for incident ${postmortem.incidentId}`
+        : `Add post-mortem for incident ${postmortem.incidentId}`,
+      content,
+      branch: githubBranch
+    };
+    
+    if (existingSha) {
+      putPayload.sha = existingSha;
+    }
     
     const response = await axios.put(
-      `https://api.github.com/repos/${githubRepo}/contents/postmortems/${filename}`,
-      {
-        message: `Add post-mortem for incident ${postmortem.incidentId}`,
-        content,
-        branch: githubBranch
-      },
+      `https://api.github.com/repos/${githubRepo}/contents/${githubPath}`,
+      putPayload,
       {
         headers: {
           'Authorization': `token ${githubToken}`,

@@ -25,11 +25,18 @@ function extractIncidentContext(incident) {
     const start = new Date(incident.timestamp);
     const end = new Date(incident.resolvedAt);
     const diffMs = end - start;
-    const diffSec = Math.floor(diffMs / 1000);
-    const minutes = Math.floor(diffSec / 60);
-    const seconds = diffSec % 60;
-    duration = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
-    mttr = duration;
+    
+    // Guard against negative duration (resolvedAt < timestamp)
+    if (diffMs <= 0) {
+      duration = 'N/A';
+      mttr = 'N/A';
+    } else {
+      const diffSec = Math.floor(diffMs / 1000);
+      const minutes = Math.floor(diffSec / 60);
+      const seconds = diffSec % 60;
+      duration = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+      mttr = duration;
+    }
   }
   
   // Format timestamps

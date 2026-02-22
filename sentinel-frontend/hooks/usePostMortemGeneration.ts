@@ -28,12 +28,12 @@ interface PostMortemResponse {
 }
 
 export function usePostMortemGeneration() {
-  const [generatingIncidentId, setGeneratingIncidentId] = useState<number | null>(null);
+  const [generatingIncidentIds, setGeneratingIncidentIds] = useState<Set<number>>(new Set());
   const [error, setError] = useState<string | null>(null);
-  const [lastGenerated, setLastGenerated] = useState<PostMortemResponse | null>(null);
+  const [lastGeneratedMap, setLastGeneratedMap] = useState<Map<number, PostMortemResponse>>(new Map());
 
   const generatePostMortem = async (incidentId: number) => {
-    setGeneratingIncidentId(incidentId);
+    setGeneratingIncidentIds(prev => new Set(prev).add(incidentId));
     setError(null);
 
     try {
@@ -44,19 +44,44 @@ export function usePostMortemGeneration() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || 'Failed to generate post-mortem');
+        // Safely parse error response
+        let errorMessage = `Failed to generate post-mortem (HTTP ${response.status})`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error?.message || errorMessage;
+        } catch {
+          // If JSON parse fails, try to get text or use status text
+          try {
+            const errorText = await response.text();
+            errorMessage = errorText || response.statusText || errorMessage;
+          } catch {
+            errorMessage = response.statusText || errorMessage;
+          }
+        }
+        throw new Error(errorMessage);
       }
 
       const data: PostMortemResponse = await response.json();
-      setLastGenerated(data);
+      setLastGeneratedMap(prev => new Map(prev).set(incidentId, data));
       return data;
-    } catch (err: any) {
-      const errorMessage = err.message || 'An unexpected error occurred';
+    } catch (err: unknown) {
+      // Safely extract error message
+      let errorMessage = 'An unexpected error occurred';
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      } else if (err && typeof err === 'object' && 'message' in err) {
+        errorMessage = String((err as { message: unknown }).message);
+      }
       setError(errorMessage);
       throw err;
     } finally {
-      setGeneratingIncidentId(null);
+      setGeneratingIncidentIds(prev => {
+        const next = new Set(prev);
+        next.delete(incidentId);
+        return next;
+      });
     }
   };
 
@@ -90,8 +115,8 @@ export function usePostMortemGeneration() {
   return {
     generatePostMortem,
     downloadPostMortem,
-    isGenerating: (incidentId: number) => generatingIncidentId === incidentId,
+    isGenerating: (incidentId: number) => generatingIncidentIds.has(incidentId),
     error,
-    lastGenerated
+    lastGenerated: (incidentId: number) => lastGeneratedMap.get(incidentId) || null
   };
 }
