@@ -115,10 +115,21 @@ function IncidentsContent() {
 
     const totalPages = Math.ceil(totalCount / pageSize);
 
-    const handleGeneratePostMortem = useCallback(async (incidentId: number) => {
+    const handleGeneratePostMortem = useCallback(async (incidentId: string) => {
+        // Convert string ID to number for API call
+        const numericId = typeof incidentId === 'string' ? parseInt(incidentId, 10) : incidentId;
+        
+        // Validate the ID is a valid number
+        if (!Number.isFinite(numericId) || numericId <= 0) {
+            console.error('Invalid incident ID:', incidentId);
+            setShowErrorMessage(true);
+            setTimeout(() => setShowErrorMessage(false), 5000);
+            return;
+        }
+        
         try {
-            await generatePostMortem(incidentId);
-            setLastGeneratedIncidentId(incidentId);
+            await generatePostMortem(numericId);
+            setLastGeneratedIncidentId(numericId);
             setShowSuccessMessage(true);
             setTimeout(() => setShowSuccessMessage(false), 5000);
         } catch (error) {

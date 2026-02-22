@@ -7,14 +7,14 @@ import { Button } from "@/components/common/Button";
 interface IncidentDetailProps {
     incident: Incident;
     onViewReasoning?: (id: string) => void;
-    onGeneratePostMortem?: (incidentId: number) => void;
-    isGeneratingPostMortem?: (incidentId: number) => boolean;
+    onGeneratePostMortem?: (incidentId: string) => void;
+    isGeneratingPostMortem?: (incidentId: string) => boolean;
 }
 
 export function IncidentDetail({ incident, onViewReasoning, onGeneratePostMortem, isGeneratingPostMortem }: IncidentDetailProps) {
-    // Convert and validate incident ID once
-    const postMortemId = typeof incident.id === 'string' ? parseInt(incident.id, 10) : incident.id;
-    const isValidId = Number.isFinite(postMortemId) && postMortemId > 0;
+    // Validate incident ID - check if it can be converted to a valid number for the API
+    const numericId = typeof incident.id === 'string' ? parseInt(incident.id, 10) : incident.id;
+    const isValidId = Number.isFinite(numericId) && numericId > 0;
     
     return (
         <div className="p-4 bg-black/20 border-t border-white/5 space-y-4">
@@ -90,14 +90,14 @@ export function IncidentDetail({ incident, onViewReasoning, onGeneratePostMortem
                         onClick={(e) => {
                             e.stopPropagation();
                             if (isValidId) {
-                                onGeneratePostMortem(postMortemId);
+                                onGeneratePostMortem(incident.id);
                             }
                         }}
-                        disabled={!isValidId || (isGeneratingPostMortem ? isGeneratingPostMortem(postMortemId) : false)}
+                        disabled={!isValidId || (isGeneratingPostMortem ? isGeneratingPostMortem(incident.id) : false)}
                         className="min-w-[180px]"
                     >
                         <FileText className="h-3 w-3 mr-2" />
-                        {!isValidId ? 'Invalid ID' : (isGeneratingPostMortem && isGeneratingPostMortem(postMortemId)) ? 'Generating...' : 'Generate Post-Mortem'}
+                        {!isValidId ? 'Invalid ID' : (isGeneratingPostMortem && isGeneratingPostMortem(incident.id)) ? 'Generating...' : 'Generate Post-Mortem'}
                     </Button>
                 )}
                 <Button

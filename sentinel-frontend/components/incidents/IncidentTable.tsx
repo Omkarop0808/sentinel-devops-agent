@@ -29,8 +29,8 @@ interface IncidentTableProps {
     onSort: (key: string) => void;
     sortConfig: SortConfig;
     onViewReasoning?: (id: string) => void;
-    onGeneratePostMortem?: (incidentId: number) => void;
-    isGeneratingPostMortem?: (incidentId: number) => boolean;
+    onGeneratePostMortem?: (incidentId: string) => void;
+    isGeneratingPostMortem?: (incidentId: string) => boolean;
 }
 
 function SortIndicator({ active, direction }: { active: boolean; direction: "asc" | "desc" }) {
@@ -102,8 +102,8 @@ function formatTimestamp(timestamp: string): string {
 interface IncidentRowProps {
     incident: Incident;
     onViewReasoning?: (id: string) => void;
-    onGeneratePostMortem?: (incidentId: number) => void;
-    isGeneratingPostMortem?: (incidentId: number) => boolean;
+    onGeneratePostMortem?: (incidentId: string) => void;
+    isGeneratingPostMortem?: (incidentId: string) => boolean;
 }
 
 function IncidentRow({ incident, onViewReasoning, onGeneratePostMortem, isGeneratingPostMortem }: IncidentRowProps) {
